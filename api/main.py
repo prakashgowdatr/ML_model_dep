@@ -89,9 +89,16 @@ class PredictResponse(BaseModel):
 async def lifespan(app: FastAPI):
     """
     FastAPI lifespan event — runs BEFORE the server accepts requests.
-    We load the model here so every request is fast (no repeated disk I/O).
+    We preload the model here so requests are fast. If artifacts are stubs
+    (e.g., during CI/CD smoke test), warn rather than preventing server startup.
     """
-    load_artifacts()
+    try:
+        load_artifacts()
+    except Exception as e:
+        print(f"⚠️  Warning: Artifacts could not be loaded at startup ({e}).")
+        print(
+            "   /health will still respond; /predict will return 503 until valid artifacts exist."
+        )
     yield
     # (cleanup code would go here if needed)
 

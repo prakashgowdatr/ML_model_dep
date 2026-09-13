@@ -131,9 +131,8 @@ jobs:
       - name: 🗂️ Create stub artifacts for Docker build
         run: |
           mkdir -p artifacts
+          python3 -c "import pickle; open('artifacts/scaler.pkl', 'wb').write(pickle.dumps(None))"
           touch artifacts/model.pt
-          touch artifacts/scaler.pkl
-          touch artifacts/metrics.json
           echo '{}' > artifacts/metrics.json
 
       # docker/setup-buildx-action enables BuildKit — Docker's modern build engine.

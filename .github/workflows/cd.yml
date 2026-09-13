@@ -60,8 +60,8 @@ jobs:
       - name: 🗂️ Create stub artifacts
         run: |
           mkdir -p artifacts
+          python3 -c "import pickle; open('artifacts/scaler.pkl', 'wb').write(pickle.dumps(None))"
           touch artifacts/model.pt
-          touch artifacts/scaler.pkl
           echo '{"note": "stub for CD demo"}' > artifacts/metrics.json
 
       # DOCKER BUILDX: Enable BuildKit for better caching and multi-platform builds
