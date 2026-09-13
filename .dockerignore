@@ -1,0 +1,33 @@
+# Files/directories Docker should NOT copy into the image
+# (keeps image small and secrets out of it)
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Raw data (large, not needed in image)
+data/
+
+# Git and IDE
+.git/
+.gitignore
+.github/
+
+# Development files
+*.md
+tests/
+scripts/
+
+# Secrets / env files
+.env
+*.env
+
+# macOS
+.DS_Store

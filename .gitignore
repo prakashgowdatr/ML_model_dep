@@ -1,0 +1,33 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+
+# ── Virtual environments ──────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+
+# ── Testing ───────────────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Raw data (large files — download locally, don't commit) ──────────────────
+data/raw/
+
+# ── Model artifacts (large binary files — don't commit to Git) ───────────────
+# Commit only the .gitkeep placeholder
+artifacts/*.pt
+artifacts/*.pkl
+
+# ── IDE / OS ──────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+.DS_Store
+*.swp

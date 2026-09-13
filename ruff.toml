@@ -1,0 +1,25 @@
+# ruff.toml — Ruff linter/formatter configuration
+# Ruff replaces: flake8, isort, pyupgrade, and black in one tool.
+
+[lint]
+# Which rule sets to enable
+select = [
+    "E",    # pycodestyle errors
+    "F",    # pyflakes (undefined names, unused imports)
+    "I",    # isort (import ordering)
+    "UP",   # pyupgrade (modern Python syntax)
+]
+
+ignore = [
+    "E501",  # line too long — we'll handle this via formatter
+]
+
+[lint.per-file-ignores]
+# Test files can use assert and magic values freely
+"tests/*" = ["S101", "PLR2004"]
+
+[format]
+# Use double quotes (like Black)
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"

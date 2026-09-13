@@ -1,0 +1,17 @@
+{
+  "best_val_loss": 0.00023123968415737184,
+  "num_features": 5,
+  "hidden_size": 64,
+  "num_layers": 1,
+  "sequence_length": 24,
+  "features": [
+    "pm25",
+    "temperature",
+    "humidity",
+    "wind_speed",
+    "pressure"
+  ],
+  "test_mae": 10.7159,
+  "test_rmse": 19.3171,
+  "test_r2": 0.941
+}

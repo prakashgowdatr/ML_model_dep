@@ -1,0 +1,43 @@
+# ============================================================
+# config.yaml — Central configuration for the PM2.5 project
+# Change values here; no code edits needed.
+# ============================================================
+
+# ----- Data paths -----
+data:
+  raw_path: "data/raw/PRSA_data.csv"
+  artifacts_dir: "artifacts"
+
+# ----- Preprocessing -----
+preprocessing:
+  sequence_length: 24        # hours of history fed into the LSTM
+  features:                  # columns used as model inputs
+    - pm25
+    - temperature
+    - humidity
+    - wind_speed
+    - pressure
+  target: pm25               # column we want to predict
+  train_ratio: 0.70
+  val_ratio: 0.15
+  # test_ratio is the remainder: 0.15
+
+# ----- Model architecture -----
+model:
+  hidden_size: 64
+  num_layers: 1
+  dropout: 0.0               # keep 0 for a single-layer LSTM
+
+# ----- Training -----
+training:
+  epochs: 50
+  batch_size: 64
+  learning_rate: 0.001
+  early_stopping_patience: 5
+  seed: 42
+
+# ----- Paths for saved artifacts -----
+artifacts:
+  model_path: "artifacts/model.pt"
+  scaler_path: "artifacts/scaler.pkl"
+  metrics_path: "artifacts/metrics.json"

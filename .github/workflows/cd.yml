@@ -1,0 +1,172 @@
+# =============================================================================
+# .github/workflows/cd.yml — Continuous Delivery (CD) Pipeline
+#
+# CONCEPT: CD automates the delivery of a verified, tested artifact
+# (here, a Docker image) to a registry where it can be deployed.
+# CD runs AFTER CI has already validated the code.
+#
+# FLOW:
+#   CI passes → CD runs → image built → tagged → pushed to GHCR
+#   Then a human (or automation) deploys from GHCR to a real server.
+#
+# GHCR (GitHub Container Registry):
+#   Free Docker image registry built into GitHub.
+#   Your images live at: ghcr.io/YOUR_GITHUB_USERNAME/pm25-forecaster
+#   No extra account needed — uses your GitHub credentials.
+# =============================================================================
+
+name: CD — Build & Push to GHCR
+
+# ── TRIGGER ──────────────────────────────────────────────────────────────────
+# Only run CD on push to 'main'.
+# Pull requests should only run CI — we don't deploy unreviewed code.
+on:
+  push:
+    branches: [main]
+
+# ── PERMISSIONS ──────────────────────────────────────────────────────────────
+# CONCEPT: GitHub Actions jobs run with restricted permissions by default.
+# We must explicitly grant 'write' access to packages (GHCR) and contents.
+#
+# 'packages: write'  → allows pushing Docker images to GHCR
+# 'contents: read'   → allows reading the repository (for checkout)
+permissions:
+  contents: read
+  packages: write
+
+# ── ENVIRONMENT VARIABLES ─────────────────────────────────────────────────────
+# CONCEPT: Environment variables store configuration values that are used
+# across multiple steps. Defined once here, referenced as ${{ env.VAR }}.
+#
+# REGISTRY: GitHub Container Registry URL (always this value)
+# IMAGE_NAME: The full name for our Docker image
+env:
+  REGISTRY: ghcr.io
+  # github.repository is automatically set to "username/repo-name"
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+
+  # ── JOB: Build and Push ────────────────────────────────────────────────────
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # Create stub artifacts (same as CI — in production you'd download
+      # the real trained model from cloud storage, e.g., AWS S3 or GCS).
+      - name: 🗂️ Create stub artifacts
+        run: |
+          mkdir -p artifacts
+          touch artifacts/model.pt
+          touch artifacts/scaler.pkl
+          echo '{"note": "stub for CD demo"}' > artifacts/metrics.json
+
+      # DOCKER BUILDX: Enable BuildKit for better caching and multi-platform builds
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # ── LOGIN TO GHCR ────────────────────────────────────────────────────
+      # CONCEPT: To push an image to a registry, you must authenticate.
+      #
+      # SECRET: ${{ secrets.GITHUB_TOKEN }} is a special secret that GitHub
+      # automatically creates for every workflow run.
+      # You don't set this yourself — GitHub injects it.
+      # It has exactly the permissions defined in the 'permissions' block above.
+      #
+      # IMPORTANT: Never hardcode passwords in workflow files.
+      # Always use ${{ secrets.SECRET_NAME }} syntax.
+      - name: 🔐 Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}          # your GitHub username
+          password: ${{ secrets.GITHUB_TOKEN }}  # auto-provided, no setup needed
+
+      # ── EXTRACT METADATA ─────────────────────────────────────────────────
+      # CONCEPT: Docker IMAGE TAGGING
+      # A tag is a label attached to a Docker image, like a version number.
+      # Common tagging strategies:
+      #
+      #   :latest         → always points to the newest image
+      #   :main           → points to the image from the main branch
+      #   :sha-a1b2c3d    → points to the exact commit (immutable, great for rollbacks)
+      #
+      # Using both :latest and the commit SHA is a best practice:
+      #   • :latest makes it easy to pull the newest version
+      #   • :sha-xxxx lets you roll back to a specific commit
+      - name: 🏷️ Extract Docker metadata (tags + labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            # Always tag as 'latest' on push to main
+            type=raw,value=latest
+            # Tag with the short commit SHA (first 7 chars), e.g., sha-a1b2c3d
+            type=sha,prefix=sha-,format=short
+            # Tag with the branch name, e.g., 'main'
+            type=ref,event=branch
+
+      # ── BUILD AND PUSH ────────────────────────────────────────────────────
+      # CONCEPT: This step builds the Docker image AND pushes it to GHCR
+      # in a single optimized step using BuildKit.
+      #
+      # 'push: true' — unlike CI where we used 'push: false',
+      # here we actually publish the image to the registry.
+      #
+      # The image will be visible at:
+      # https://github.com/YOUR_USERNAME/ML_model_dep/pkgs/container/ml_model_dep
+      - name: 🏗️ Build and push Docker image to GHCR
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Cache layers in GitHub Actions cache — speeds up subsequent builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # ── DEPLOYMENT SUMMARY ────────────────────────────────────────────────
+      # Write a summary to the GitHub Actions UI showing the image details.
+      # This is visible in the "Summary" tab of the workflow run.
+      - name: 📋 Write deployment summary
+        run: |
+          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Image pushed to GHCR:**" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Pull and run locally:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next steps for production deployment:" >> $GITHUB_STEP_SUMMARY
+          echo "1. SSH into your server" >> $GITHUB_STEP_SUMMARY
+          echo "2. \`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. \`docker stop pm25 && docker rm pm25\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. \`docker run -d --name pm25 -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+
+# =============================================================================
+# HOW TO DEPLOY AFTER THIS WORKFLOW RUNS
+#
+# Option A — Cloud VM (AWS EC2 / GCP Compute / Azure VM):
+#   1. SSH into your VM
+#   2. docker pull ghcr.io/YOUR_USERNAME/ml_model_dep:latest
+#   3. docker run -d -p 80:8000 ghcr.io/YOUR_USERNAME/ml_model_dep:latest
+#   4. Your API is live at http://<VM_IP>/predict
+#
+# Option B — Railway / Render (free tier):
+#   Point them at your GHCR image URL — they pull and deploy automatically.
+#
+# Option C — GitHub Actions auto-deploy (advanced):
+#   Add a step that SSHes into your server using a stored SSH key secret
+#   and runs the docker pull + docker run commands above.
+# =============================================================================

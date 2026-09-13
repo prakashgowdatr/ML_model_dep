@@ -1,0 +1,165 @@
+# =============================================================================
+# .github/workflows/ci.yml — Continuous Integration (CI) Pipeline
+#
+# CONCEPT: CI is a practice where every code change is automatically
+# validated by running tests and checks. If anything fails, the pipeline
+# stops and alerts you BEFORE bad code merges to main.
+#
+# WORKFLOW: A workflow is this entire file — a collection of jobs that
+# GitHub Actions runs in response to events.
+#
+# TRIGGER: The 'on' block defines when this workflow fires.
+# =============================================================================
+
+name: CI — Lint, Test, Build
+
+# ── TRIGGER ──────────────────────────────────────────────────────────────────
+# Run this workflow when:
+#   • Someone pushes commits to 'main'
+#   • Someone opens or updates a pull request targeting 'main'
+# This means code is checked before AND after it merges.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# ── JOBS ─────────────────────────────────────────────────────────────────────
+# A JOB is a set of steps that runs on a single machine (runner).
+# Jobs in the same workflow run in parallel by default.
+# Use 'needs:' to create dependencies between jobs.
+jobs:
+
+  # ── JOB 1: Lint ────────────────────────────────────────────────────────────
+  # CONCEPT: Linting checks code style and catches common bugs automatically.
+  # Running lint first is fast (~10s) and catches typos before waiting for
+  # the slower test suite.
+  lint:
+    # RUNNER: The type of machine GitHub spins up to run this job.
+    # 'ubuntu-latest' is the most common — free for public repos.
+    runs-on: ubuntu-latest
+
+    # STEPS: Ordered list of actions performed in sequence.
+    # If any step fails (non-zero exit code), the job stops immediately.
+    steps:
+
+      # ACTION: 'uses' borrows a pre-built action from the GitHub marketplace.
+      # actions/checkout@v4 clones your repository onto the runner.
+      # Without this, the runner has no access to your code.
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # Set up the correct Python version.
+      # 'with' passes parameters to the action.
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          # Cache pip downloads so subsequent runs are faster
+          cache: "pip"
+
+      - name: 📦 Install Ruff
+        run: pip install ruff==0.4.4
+
+      # Ruff check: catches unused imports, undefined names, style issues
+      - name: 🔍 Ruff — lint check
+        run: ruff check src/ api/ tests/ scripts/
+
+      # Ruff format: ensures consistent code formatting (like Black)
+      - name: 🎨 Ruff — format check
+        run: ruff format --check src/ api/ tests/ scripts/
+
+  # ── JOB 2: Test ────────────────────────────────────────────────────────────
+  # CONCEPT: Unit tests verify that individual pieces of code work correctly.
+  # We run tests AFTER lint passes (no point testing unformatted code).
+  # 'needs: lint' creates a job dependency — test won't start if lint fails.
+  test:
+    runs-on: ubuntu-latest
+    needs: lint   # ← JOB DEPENDENCY: only runs if 'lint' succeeds
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      # ENVIRONMENT VARIABLE: 'PYTHONPATH' tells Python where to find modules.
+      # Setting it here makes 'from src.config import CFG' work without
+      # installing the package.
+      - name: 📦 Install dependencies
+        run: pip install -r requirements.txt
+
+      # Run pytest with coverage report.
+      # --cov=src measures which lines of src/ are covered by tests.
+      # -v shows each test name (verbose).
+      - name: 🧪 Run pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}
+        run: |
+          pytest tests/ -v --tb=short
+
+      # ARTIFACT: A file produced by the workflow that you want to save.
+      # Here we upload the test results so you can download them from GitHub UI.
+      # Artifacts persist for the number of days specified (default: 90).
+      - name: 📤 Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()   # upload even if tests fail (useful for debugging)
+        with:
+          name: test-results
+          path: .pytest_cache/
+          retention-days: 7
+
+  # ── JOB 3: Docker Build ────────────────────────────────────────────────────
+  # CONCEPT: We verify the Docker image builds successfully in CI.
+  # This catches Dockerfile errors and missing dependencies before deployment.
+  # We do NOT push the image here — that happens in the CD workflow.
+  docker-build:
+    runs-on: ubuntu-latest
+    needs: test   # ← Only build Docker if all tests pass
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      # Create empty artifact files so Docker COPY doesn't fail.
+      # In a real project, you'd download trained artifacts from storage (S3, etc.)
+      # Here we create stubs so the CI build validates the Dockerfile structure.
+      - name: 🗂️ Create stub artifacts for Docker build
+        run: |
+          mkdir -p artifacts
+          touch artifacts/model.pt
+          touch artifacts/scaler.pkl
+          touch artifacts/metrics.json
+          echo '{}' > artifacts/metrics.json
+
+      # docker/setup-buildx-action enables BuildKit — Docker's modern build engine.
+      # It's faster and supports advanced features like cache exports.
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build the image with tag 'ci-test'.
+      # --load loads the image into the local Docker daemon (needed for testing).
+      # If this step succeeds, your Dockerfile is valid.
+      - name: 🏗️ Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false          # do NOT push in CI — that's CD's job
+          tags: pm25-forecaster:ci-test
+          load: true
+          cache-from: type=gha   # use GitHub Actions cache to speed up builds
+          cache-to: type=gha,mode=max
+
+      # Quick sanity check: start the container and hit /health.
+      # 'docker run -d' starts in detached (background) mode.
+      # We wait 3 seconds for uvicorn to start, then curl the health endpoint.
+      - name: 🏃 Smoke test — container health check
+        run: |
+          docker run -d --name pm25-test -p 8000:8000 pm25-forecaster:ci-test
+          sleep 5
+          curl --fail http://localhost:8000/health || (docker logs pm25-test && exit 1)
+          docker stop pm25-test

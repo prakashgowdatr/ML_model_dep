@@ -1,0 +1,22 @@
+# Core ML & data
+torch==2.2.2
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+
+# API
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+pydantic==2.7.1
+
+# Config
+pyyaml==6.0.1
+
+# HTTP (for download script)
+requests==2.31.0
+
+# Testing & linting
+pytest==8.2.0
+pytest-cov==5.0.0
+httpx==0.27.0          # FastAPI TestClient dependency
+ruff==0.4.4
