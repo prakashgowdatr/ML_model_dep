@@ -1,5 +1,8 @@
 # PM2.5 Forecaster — LSTM Air-Quality Prediction API
 
+[![CI](https://github.com/prakashgowdatr/ML_model_dep/actions/workflows/ci.yml/badge.svg)](https://github.com/prakashgowdatr/ML_model_dep/actions/workflows/ci.yml)
+[![CD](https://github.com/prakashgowdatr/ML_model_dep/actions/workflows/cd.yml/badge.svg)](https://github.com/prakashgowdatr/ML_model_dep/actions/workflows/cd.yml)
+
 > **Learning objective:** CI/CD with GitHub Actions.  
 > The ML model is intentionally simple. The engineering pipeline is the point.
 
@@ -111,8 +114,8 @@ Rows: ~43,000 · Split: 70% train / 15% val / 15% test (chronological)
 
 ```bash
 # 1. Clone
-git clone https://github.com/YOUR_USERNAME/YOUR_REPO.git
-cd YOUR_REPO
+git clone https://github.com/prakashgowdatr/ML_model_dep.git
+cd ML_model_dep
 
 # 2. Create virtual environment
 python -m venv .venv
@@ -241,12 +244,12 @@ CD runs only on push to `main` (after CI passes):
    • :latest          → always the newest
    • :sha-a1b2c3d     → pinned to this exact commit
    • :main            → branch name
-5. Push all tags to ghcr.io/YOUR_USERNAME/REPO
+5. Push all tags to ghcr.io/prakashgowdatr/ml_model_dep
 ```
 
 Your image is now at:
 ```
-ghcr.io/YOUR_USERNAME/REPO:latest
+ghcr.io/prakashgowdatr/ml_model_dep:latest
 ```
 
 ---
@@ -258,7 +261,7 @@ ghcr.io/YOUR_USERNAME/REPO:latest
 - Free for public repositories
 - Authentication uses your existing `GITHUB_TOKEN`
 - Images are linked to your repository automatically
-- Pull with: `docker pull ghcr.io/YOUR_USERNAME/REPO:latest`
+- Pull with: `docker pull ghcr.io/prakashgowdatr/ml_model_dep:latest`
 
 ---
 
@@ -269,9 +272,9 @@ After CD pushes the image, deploy it anywhere:
 **Option A — Cloud VM (EC2, GCP Compute, DigitalOcean):**
 ```bash
 ssh user@your-server
-docker pull ghcr.io/YOUR_USERNAME/REPO:latest
+docker pull ghcr.io/prakashgowdatr/ml_model_dep:latest
 docker stop pm25 && docker rm pm25
-docker run -d --name pm25 -p 80:8000 ghcr.io/YOUR_USERNAME/REPO:latest
+docker run -d --name pm25 -p 80:8000 ghcr.io/prakashgowdatr/ml_model_dep:latest
 ```
 
 **Option B — Railway / Render:**  
