@@ -20,6 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
+
 @pytest.fixture(scope="module")
 def client():
     """
@@ -35,11 +36,13 @@ def client():
     ):
         # Import app AFTER patching so lifespan uses the mock
         from api.main import app
+
         with TestClient(app) as c:
             yield c
 
 
 # ── GET /health ───────────────────────────────────────────────────────────────
+
 
 def test_health_returns_200(client):
     response = client.get("/health")
@@ -52,6 +55,7 @@ def test_health_returns_ok(client):
 
 
 # ── GET /model-info ───────────────────────────────────────────────────────────
+
 
 def test_model_info_returns_200(client):
     response = client.get("/model-info")
@@ -66,11 +70,20 @@ def test_model_info_returns_json(client):
 
 # ── POST /predict — validation ────────────────────────────────────────────────
 
+
 def test_predict_rejects_too_few_observations(client):
     """Sending fewer than 24 observations must return HTTP 422."""
-    payload = {"observations": [
-        {"pm25": 100, "temperature": 25, "humidity": 65, "wind_speed": 2, "pressure": 1010}
-    ]}
+    payload = {
+        "observations": [
+            {
+                "pm25": 100,
+                "temperature": 25,
+                "humidity": 65,
+                "wind_speed": 2,
+                "pressure": 1010,
+            }
+        ]
+    }
     response = client.post("/predict", json=payload)
     assert response.status_code == 422
 
@@ -84,8 +97,10 @@ def test_predict_rejects_too_many_observations(client, sample_24_observations):
 
 def test_predict_rejects_missing_field(client, sample_24_observations):
     """An observation missing 'pressure' must return HTTP 422."""
-    bad = [{k: v for k, v in obs.items() if k != "pressure"}
-           for obs in sample_24_observations]
+    bad = [
+        {k: v for k, v in obs.items() if k != "pressure"}
+        for obs in sample_24_observations
+    ]
     response = client.post("/predict", json={"observations": bad})
     assert response.status_code == 422
 
@@ -99,6 +114,7 @@ def test_predict_rejects_wrong_type(client, sample_24_observations):
 
 
 # ── POST /predict — happy path ────────────────────────────────────────────────
+
 
 def test_predict_returns_200(client, sample_24_observations):
     """A valid request must return HTTP 200."""
@@ -122,5 +138,7 @@ def test_predict_returns_float(client, sample_24_observations):
 def test_predict_returns_mocked_value(client, sample_24_observations):
     """Our mock returns 115.4 — verify the API passes it through correctly."""
     with patch("api.main.predict", return_value=115.4):
-        response = client.post("/predict", json={"observations": sample_24_observations})
+        response = client.post(
+            "/predict", json={"observations": sample_24_observations}
+        )
     assert response.json()["predicted_pm25"] == 115.4

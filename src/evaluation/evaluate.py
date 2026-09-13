@@ -23,9 +23,9 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import CFG                         # noqa: E402
+from src.config import CFG  # noqa: E402
 from src.data.preprocessing import load_scaler, run_pipeline  # noqa: E402
-from src.models.lstm import LSTMForecaster         # noqa: E402
+from src.models.lstm import LSTMForecaster  # noqa: E402
 
 
 def load_model(num_features: int, device: torch.device) -> LSTMForecaster:
@@ -80,14 +80,14 @@ def main() -> None:
 
     # ── Load data ────────────────────────────────────────────────────────────
     print("📂  Running preprocessing pipeline …")
-    data    = run_pipeline()
-    scaler  = load_scaler()
-    X_test  = data["X_test"]
-    y_test  = data["y_test"]
+    data = run_pipeline()
+    scaler = load_scaler()
+    X_test = data["X_test"]
+    y_test = data["y_test"]
 
     num_features = X_test.shape[2]
-    features     = CFG.preprocessing.features
-    target_idx   = features.index(CFG.preprocessing.target)
+    features = CFG.preprocessing.features
+    target_idx = features.index(CFG.preprocessing.target)
 
     # ── Load model ───────────────────────────────────────────────────────────
     print("🧠  Loading model …")
@@ -98,12 +98,12 @@ def main() -> None:
 
     # ── Un-scale ─────────────────────────────────────────────────────────────
     y_pred = inverse_transform_pm25(y_pred_scaled, scaler, num_features, target_idx)
-    y_true = inverse_transform_pm25(y_test,        scaler, num_features, target_idx)
+    y_true = inverse_transform_pm25(y_test, scaler, num_features, target_idx)
 
     # ── Metrics ──────────────────────────────────────────────────────────────
-    mae  = mean_absolute_error(y_true, y_pred)
+    mae = mean_absolute_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
-    r2   = r2_score(y_true, y_pred)
+    r2 = r2_score(y_true, y_pred)
 
     print("\n📊  Test Set Metrics")
     print(f"    MAE  : {mae:.2f} µg/m³")
@@ -120,11 +120,13 @@ def main() -> None:
         except json.JSONDecodeError:
             existing = {}
 
-    existing.update({
-        "test_mae": round(float(mae), 4),
-        "test_rmse": round(float(rmse), 4),
-        "test_r2": round(float(r2), 4),
-    })
+    existing.update(
+        {
+            "test_mae": round(float(mae), 4),
+            "test_rmse": round(float(rmse), 4),
+            "test_r2": round(float(r2), 4),
+        }
+    )
     with open(metrics_path, "w") as f:
         json.dump(existing, f, indent=2)
 

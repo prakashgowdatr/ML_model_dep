@@ -97,11 +97,15 @@ jobs:
       # Using both :latest and the commit SHA is a best practice:
       #   • :latest makes it easy to pull the newest version
       #   • :sha-xxxx lets you roll back to a specific commit
+      - name: 🔤 Lowercase image name for Docker registry
+        run: |
+          echo "IMAGE_NAME_LOWER=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: 🏷️ Extract Docker metadata (tags + labels)
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}
           tags: |
             # Always tag as 'latest' on push to main
             type=raw,value=latest
@@ -144,15 +148,15 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Pull and run locally:" >> $GITHUB_STEP_SUMMARY
           echo '```bash' >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
-          echo "docker run -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker run -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next steps for production deployment:" >> $GITHUB_STEP_SUMMARY
           echo "1. SSH into your server" >> $GITHUB_STEP_SUMMARY
-          echo "2. \`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. \`docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest\`" >> $GITHUB_STEP_SUMMARY
           echo "3. \`docker stop pm25 && docker rm pm25\`" >> $GITHUB_STEP_SUMMARY
-          echo "4. \`docker run -d --name pm25 -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest\`" >> $GITHUB_STEP_SUMMARY
+          echo "4. \`docker run -d --name pm25 -p 8000:8000 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME_LOWER }}:latest\`" >> $GITHUB_STEP_SUMMARY
 
 # =============================================================================
 # HOW TO DEPLOY AFTER THIS WORKFLOW RUNS

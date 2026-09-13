@@ -18,7 +18,6 @@ from __future__ import annotations
 import pickle
 import sys
 from pathlib import Path
-from typing import List
 
 import numpy as np
 import torch
@@ -26,9 +25,8 @@ import torch
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import CFG            # noqa: E402
+from src.config import CFG  # noqa: E402
 from src.models.lstm import LSTMForecaster  # noqa: E402
-
 
 # ── Lazy-loaded singletons (loaded once when the API starts) ─────────────────
 _model: LSTMForecaster | None = None
@@ -72,7 +70,7 @@ def load_artifacts() -> None:
     print(f"✅  Scaler loaded from {scaler_path}")
 
 
-def predict(observations: List[dict]) -> float:
+def predict(observations: list[dict]) -> float:
     """
     Predict next-hour PM2.5 from 24 hourly observations.
 
@@ -87,7 +85,7 @@ def predict(observations: List[dict]) -> float:
         raise RuntimeError("Call load_artifacts() before predict().")
 
     features = CFG.preprocessing.features
-    target   = CFG.preprocessing.target
+    target = CFG.preprocessing.target
     target_idx = features.index(target)
     num_features = len(features)
 

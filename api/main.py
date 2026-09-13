@@ -16,7 +16,6 @@ import json
 import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import List
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, field_validator
@@ -25,19 +24,20 @@ from pydantic import BaseModel, field_validator
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import CFG                   # noqa: E402
+from src.config import CFG  # noqa: E402
 from src.inference.predict import load_artifacts, predict  # noqa: E402
-
 
 # ── Pydantic schemas ─────────────────────────────────────────────────────────
 
+
 class Observation(BaseModel):
     """One hour of sensor readings."""
-    pm25:        float
+
+    pm25: float
     temperature: float
-    humidity:    float
-    wind_speed:  float
-    pressure:    float
+    humidity: float
+    wind_speed: float
+    pressure: float
 
 
 class PredictRequest(BaseModel):
@@ -45,11 +45,12 @@ class PredictRequest(BaseModel):
     Request body for POST /predict.
     Must contain exactly 24 hourly observations.
     """
-    observations: List[Observation]
+
+    observations: list[Observation]
 
     @field_validator("observations")
     @classmethod
-    def must_be_24(cls, v: List[Observation]) -> List[Observation]:
+    def must_be_24(cls, v: list[Observation]) -> list[Observation]:
         seq_len = CFG.preprocessing.sequence_length  # 24
         if len(v) != seq_len:
             raise ValueError(
@@ -77,10 +78,12 @@ class PredictRequest(BaseModel):
 
 class PredictResponse(BaseModel):
     """Response body for POST /predict."""
+
     predicted_pm25: float
 
 
 # ── App lifecycle ─────────────────────────────────────────────────────────────
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -104,6 +107,7 @@ app = FastAPI(
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
+
 
 @app.get("/", tags=["System"])
 def root():
@@ -131,10 +135,10 @@ def model_info():
         return {
             "message": "Model not yet trained or metrics file missing.",
             "model_config": {
-                "hidden_size":      CFG.model.hidden_size,
-                "num_layers":       CFG.model.num_layers,
-                "sequence_length":  CFG.preprocessing.sequence_length,
-                "features":         CFG.preprocessing.features,
+                "hidden_size": CFG.model.hidden_size,
+                "num_layers": CFG.model.num_layers,
+                "sequence_length": CFG.preprocessing.sequence_length,
+                "features": CFG.preprocessing.features,
             },
         }
     with open(metrics_path) as f:
@@ -157,7 +161,7 @@ def predict_endpoint(request: PredictRequest):
     """
     try:
         obs_dicts = [obs.model_dump() for obs in request.observations]
-        result    = predict(obs_dicts)
+        result = predict(obs_dicts)
         return PredictResponse(predicted_pm25=result)
     except RuntimeError as e:
         # Model not loaded (e.g., artifacts missing)

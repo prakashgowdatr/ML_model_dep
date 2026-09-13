@@ -27,12 +27,12 @@ from torch.utils.data import DataLoader, TensorDataset
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from src.config import CFG                         # noqa: E402
-from src.data.preprocessing import run_pipeline    # noqa: E402
-from src.models.lstm import LSTMForecaster         # noqa: E402
-
+from src.config import CFG  # noqa: E402
+from src.data.preprocessing import run_pipeline  # noqa: E402
+from src.models.lstm import LSTMForecaster  # noqa: E402
 
 # ── Reproducibility ───────────────────────────────────────────────────────────
+
 
 def set_seed(seed: int) -> None:
     """Fix random seeds so results are reproducible across runs."""
@@ -44,6 +44,7 @@ def set_seed(seed: int) -> None:
 
 
 # ── Dataset helper ────────────────────────────────────────────────────────────
+
 
 def make_loader(X: np.ndarray, y: np.ndarray, shuffle: bool) -> DataLoader:
     """Wrap numpy arrays into a PyTorch DataLoader."""
@@ -61,6 +62,7 @@ def make_loader(X: np.ndarray, y: np.ndarray, shuffle: bool) -> DataLoader:
 
 
 # ── Training loop ─────────────────────────────────────────────────────────────
+
 
 def train_one_epoch(
     model: nn.Module,
@@ -85,8 +87,8 @@ def train_one_epoch(
 
         # Backward pass
         optimizer.zero_grad()  # clear old gradients
-        loss.backward()        # compute new gradients
-        optimizer.step()       # update weights
+        loss.backward()  # compute new gradients
+        optimizer.step()  # update weights
 
         total_loss += loss.item() * len(X_batch)
 
@@ -116,6 +118,7 @@ def evaluate(
 
 # ── Main ─────────────────────────────────────────────────────────────────────
 
+
 def main() -> None:
     set_seed(CFG.training.seed)
 
@@ -126,7 +129,7 @@ def main() -> None:
     # ── Data ─────────────────────────────────────────────────────────────────
     data = run_pipeline()
     train_loader = make_loader(data["X_train"], data["y_train"], shuffle=True)
-    val_loader   = make_loader(data["X_val"],   data["y_val"],   shuffle=False)
+    val_loader = make_loader(data["X_val"], data["y_val"], shuffle=False)
 
     num_features = data["X_train"].shape[2]  # number of input columns
 
@@ -155,7 +158,7 @@ def main() -> None:
 
     for epoch in range(1, CFG.training.epochs + 1):
         train_loss = train_one_epoch(model, train_loader, optimizer, criterion, device)
-        val_loss   = evaluate(model, val_loader, criterion, device)
+        val_loss = evaluate(model, val_loader, criterion, device)
 
         if val_loss < best_val_loss:
             best_val_loss = val_loss
@@ -179,11 +182,11 @@ def main() -> None:
     # Save lightweight metadata for the API /model-info endpoint
     info = {
         "best_val_loss": best_val_loss,
-        "num_features":  num_features,
-        "hidden_size":   CFG.model.hidden_size,
-        "num_layers":    CFG.model.num_layers,
+        "num_features": num_features,
+        "hidden_size": CFG.model.hidden_size,
+        "num_layers": CFG.model.num_layers,
         "sequence_length": CFG.preprocessing.sequence_length,
-        "features":      CFG.preprocessing.features,
+        "features": CFG.preprocessing.features,
     }
     metrics_path = PROJECT_ROOT / CFG.artifacts.metrics_path
     with open(metrics_path, "w") as f:

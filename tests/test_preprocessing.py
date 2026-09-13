@@ -11,18 +11,17 @@ They verify:
 
 import numpy as np
 import pandas as pd
-import pytest
 from sklearn.preprocessing import MinMaxScaler
 
 from src.data.preprocessing import clean, make_windows, split
 
-
 # ── 1. Missing value handling ─────────────────────────────────────────────────
+
 
 def test_clean_forward_fills_nans(fake_df):
     """NaN values should be forward-filled, not just dropped."""
     dirty = fake_df.copy()
-    dirty.iloc[5, 0] = float("nan")   # inject one NaN in pm25
+    dirty.iloc[5, 0] = float("nan")  # inject one NaN in pm25
     dirty.iloc[10, 2] = float("nan")  # inject one NaN in humidity
 
     cleaned = clean(dirty)
@@ -33,13 +32,15 @@ def test_clean_forward_fills_nans(fake_df):
 
 def test_clean_drops_rows_with_all_nans():
     """Rows that can't be forward-filled (e.g., first row is NaN) are dropped."""
-    df = pd.DataFrame({
-        "pm25":        [float("nan"), 50.0, 60.0],
-        "temperature": [float("nan"), 20.0, 21.0],
-        "humidity":    [float("nan"), 60.0, 62.0],
-        "wind_speed":  [float("nan"),  2.0,  2.1],
-        "pressure":    [float("nan"), 1010.0, 1011.0],
-    })
+    df = pd.DataFrame(
+        {
+            "pm25": [float("nan"), 50.0, 60.0],
+            "temperature": [float("nan"), 20.0, 21.0],
+            "humidity": [float("nan"), 60.0, 62.0],
+            "wind_speed": [float("nan"), 2.0, 2.1],
+            "pressure": [float("nan"), 1010.0, 1011.0],
+        }
+    )
     cleaned = clean(df)
     # First row is NaN; ffill can't help (no previous row), bfill should fill it
     # bfill picks values from row 1 → row 0 should be filled
@@ -47,6 +48,7 @@ def test_clean_drops_rows_with_all_nans():
 
 
 # ── 2. Split ──────────────────────────────────────────────────────────────────
+
 
 def test_split_sizes_sum_to_original(fake_df):
     """The three splits must together contain all original rows."""
@@ -69,6 +71,7 @@ def test_split_ratios_are_approximate(fake_df):
 
 
 # ── 3. Sliding window ─────────────────────────────────────────────────────────
+
 
 def test_make_windows_output_shape(fake_scaled_array):
     """X should be (N-seq_len, seq_len, features); y should be (N-seq_len,)."""
@@ -100,6 +103,7 @@ def test_make_windows_dtype(fake_scaled_array):
 
 
 # ── 4. No data leakage ────────────────────────────────────────────────────────
+
 
 def test_scaler_fitted_only_on_train(fake_df):
     """

@@ -11,8 +11,8 @@ import torch
 
 from src.models.lstm import LSTMForecaster
 
-
 # ── 1. Instantiation ──────────────────────────────────────────────────────────
+
 
 def test_model_instantiates():
     """Model should be created without errors."""
@@ -43,6 +43,7 @@ def test_model_parameter_count_is_reasonable():
 
 # ── 2. Forward pass shapes ────────────────────────────────────────────────────
 
+
 def test_forward_output_shape_batch_of_4(fake_model, sample_batch):
     """Output shape should be (batch_size,) — one scalar per sample."""
     out = fake_model(sample_batch)
@@ -63,6 +64,7 @@ def test_forward_output_is_finite(fake_model, sample_batch):
 
 
 # ── 3. Different configurations ───────────────────────────────────────────────
+
 
 @pytest.mark.parametrize("hidden_size", [16, 32, 64, 128])
 def test_forward_different_hidden_sizes(hidden_size):
@@ -93,12 +95,13 @@ def test_forward_different_feature_counts():
 
 # ── 4. Gradient flow ──────────────────────────────────────────────────────────
 
+
 def test_gradients_flow_through_model(fake_model, sample_batch):
     """
     After a backward pass, all parameters should have gradients.
     This confirms the model is fully differentiable.
     """
-    out  = fake_model(sample_batch)
+    out = fake_model(sample_batch)
     loss = out.mean()
     loss.backward()
 

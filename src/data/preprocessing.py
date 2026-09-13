@@ -19,7 +19,6 @@ from __future__ import annotations
 import pickle
 import sys
 from pathlib import Path
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
@@ -30,8 +29,8 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.config import CFG  # noqa: E402
 
-
 # ── 1. Load ──────────────────────────────────────────────────────────────────
+
 
 def load_raw(path: str | Path | None = None) -> pd.DataFrame:
     """Load the raw CSV.  Returns a DataFrame with only the feature columns."""
@@ -52,6 +51,7 @@ def load_raw(path: str | Path | None = None) -> pd.DataFrame:
 
 # ── 2. Clean ─────────────────────────────────────────────────────────────────
 
+
 def clean(df: pd.DataFrame) -> pd.DataFrame:
     """Forward-fill then back-fill NaNs; drop any remaining rows."""
     df = df.ffill().bfill()
@@ -64,7 +64,8 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 
 # ── 3. Split ─────────────────────────────────────────────────────────────────
 
-def split(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+
+def split(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Chronological 70 / 15 / 15 split.  NO shuffling."""
     n = len(df)
     t1 = int(n * CFG.preprocessing.train_ratio)
@@ -73,6 +74,7 @@ def split(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
 
 
 # ── 4. Scale ─────────────────────────────────────────────────────────────────
+
 
 def fit_scaler(train_df: pd.DataFrame) -> MinMaxScaler:
     """Fit MinMaxScaler on training data only.  Saves to disk."""
@@ -102,11 +104,12 @@ def apply_scaler(df: pd.DataFrame, scaler: MinMaxScaler) -> np.ndarray:
 
 # ── 5. Sliding window ─────────────────────────────────────────────────────────
 
+
 def make_windows(
     data: np.ndarray,
     seq_len: int | None = None,
     target_col_idx: int = 0,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Build input/target pairs using a sliding window.
 
@@ -123,13 +126,14 @@ def make_windows(
 
     X_list, y_list = [], []
     for i in range(len(data) - seq_len):
-        X_list.append(data[i : i + seq_len])          # 24 hours of all features
+        X_list.append(data[i : i + seq_len])  # 24 hours of all features
         y_list.append(data[i + seq_len, target_col_idx])  # next hour's PM2.5
 
     return np.array(X_list, dtype=np.float32), np.array(y_list, dtype=np.float32)
 
 
 # ── 6. Full pipeline ──────────────────────────────────────────────────────────
+
 
 def run_pipeline(
     raw_path: str | Path | None = None,
@@ -147,16 +151,14 @@ def run_pipeline(
 
     print("✂️   Splitting …")
     train_df, val_df, test_df = split(df)
-    print(
-        f"    Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}"
-    )
+    print(f"    Train: {len(train_df)}, Val: {len(val_df)}, Test: {len(test_df)}")
 
     print("📏  Scaling (fit on train only) …")
     scaler = fit_scaler(train_df)
 
     train_scaled = apply_scaler(train_df, scaler)
-    val_scaled   = apply_scaler(val_df,   scaler)
-    test_scaled  = apply_scaler(test_df,  scaler)
+    val_scaled = apply_scaler(val_df, scaler)
+    test_scaled = apply_scaler(test_df, scaler)
 
     # Target column index — PM2.5 is the first feature in our list
     features = CFG.preprocessing.features
@@ -164,18 +166,21 @@ def run_pipeline(
 
     print("🪟  Building sliding windows …")
     X_train, y_train = make_windows(train_scaled, target_col_idx=target_idx)
-    X_val,   y_val   = make_windows(val_scaled,   target_col_idx=target_idx)
-    X_test,  y_test  = make_windows(test_scaled,  target_col_idx=target_idx)
+    X_val, y_val = make_windows(val_scaled, target_col_idx=target_idx)
+    X_test, y_test = make_windows(test_scaled, target_col_idx=target_idx)
 
     print(
         f"    X_train: {X_train.shape},  X_val: {X_val.shape},  X_test: {X_test.shape}"
     )
 
     return {
-        "X_train": X_train, "y_train": y_train,
-        "X_val":   X_val,   "y_val":   y_val,
-        "X_test":  X_test,  "y_test":  y_test,
-        "scaler":  scaler,
+        "X_train": X_train,
+        "y_train": y_train,
+        "X_val": X_val,
+        "y_val": y_val,
+        "X_test": X_test,
+        "y_test": y_test,
+        "scaler": scaler,
     }
 
 

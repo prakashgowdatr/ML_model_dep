@@ -6,10 +6,8 @@ Fixtures here are automatically available to every test without importing.
 
 from __future__ import annotations
 
-import pickle
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
@@ -21,14 +19,14 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from src.models.lstm import LSTMForecaster  # noqa: E402
 
-
 # ── Constants ─────────────────────────────────────────────────────────────────
 NUM_FEATURES = 5
-SEQ_LEN      = 24
-NUM_ROWS     = 200   # enough rows to build windows without real data
+SEQ_LEN = 24
+NUM_ROWS = 200  # enough rows to build windows without real data
 
 
 # ── Fake raw data ─────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def fake_df():
@@ -36,13 +34,15 @@ def fake_df():
     import pandas as pd
 
     rng = np.random.default_rng(42)
-    return pd.DataFrame({
-        "pm25":        rng.uniform(10, 200, NUM_ROWS),
-        "temperature": rng.uniform(5,  35,  NUM_ROWS),
-        "humidity":    rng.uniform(20, 90,  NUM_ROWS),
-        "wind_speed":  rng.uniform(0,  10,  NUM_ROWS),
-        "pressure":    rng.uniform(990, 1025, NUM_ROWS),
-    })
+    return pd.DataFrame(
+        {
+            "pm25": rng.uniform(10, 200, NUM_ROWS),
+            "temperature": rng.uniform(5, 35, NUM_ROWS),
+            "humidity": rng.uniform(20, 90, NUM_ROWS),
+            "wind_speed": rng.uniform(0, 10, NUM_ROWS),
+            "pressure": rng.uniform(990, 1025, NUM_ROWS),
+        }
+    )
 
 
 @pytest.fixture
@@ -78,11 +78,11 @@ def sample_24_observations():
     rng = np.random.default_rng(0)
     return [
         {
-            "pm25":        float(rng.uniform(10, 200)),
+            "pm25": float(rng.uniform(10, 200)),
             "temperature": float(rng.uniform(5, 35)),
-            "humidity":    float(rng.uniform(20, 90)),
-            "wind_speed":  float(rng.uniform(0, 10)),
-            "pressure":    float(rng.uniform(990, 1025)),
+            "humidity": float(rng.uniform(20, 90)),
+            "wind_speed": float(rng.uniform(0, 10)),
+            "pressure": float(rng.uniform(990, 1025)),
         }
         for _ in range(SEQ_LEN)
     ]

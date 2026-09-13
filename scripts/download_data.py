@@ -10,7 +10,6 @@ Run:
 The file is saved to:  data/raw/PRSA_data.csv
 """
 
-import os
 import sys
 from pathlib import Path
 
@@ -30,8 +29,8 @@ DATASET_URL = (
 COLUMN_MAP = {
     "pm2.5": "pm25",
     "TEMP": "temperature",
-    "DEWP": "humidity",      # dew point as humidity proxy
-    "Iws":  "wind_speed",    # cumulated wind speed (actual UCI column name)
+    "DEWP": "humidity",  # dew point as humidity proxy
+    "Iws": "wind_speed",  # cumulated wind speed (actual UCI column name)
     "PRES": "pressure",
 }
 
@@ -51,7 +50,7 @@ def download() -> Path:
         print(f"✅  Dataset already exists at {out_path}. Skipping download.")
         return out_path
 
-    print(f"⬇️   Downloading dataset from UCI repository …")
+    print("⬇️   Downloading dataset from UCI repository …")
     try:
         resp = requests.get(DATASET_URL, timeout=30, stream=True)
         resp.raise_for_status()

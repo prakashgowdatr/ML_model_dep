@@ -33,7 +33,7 @@ class LSTMForecaster(nn.Module):
         super().__init__()
 
         self.hidden_size = hidden_size
-        self.num_layers  = num_layers
+        self.num_layers = num_layers
         self.num_features = num_features
 
         # LSTM layer
@@ -67,7 +67,7 @@ class LSTMForecaster(nn.Module):
 
         # Linear projection → scalar
         out = self.head(last_hidden)  # (batch, 1)
-        return out.squeeze(-1)        # (batch,)
+        return out.squeeze(-1)  # (batch,)
 
     def count_parameters(self) -> int:
         """Helper: total number of trainable parameters."""

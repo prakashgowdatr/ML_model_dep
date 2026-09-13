@@ -8,13 +8,10 @@ Usage anywhere in the project:
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List
 
 import yaml
-
 
 # ── Root of the project (two levels up from this file) ──────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -23,11 +20,12 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 def _load_yaml() -> dict:
     """Load config.yaml from the project root."""
     config_path = PROJECT_ROOT / "config.yaml"
-    with open(config_path, "r") as f:
+    with open(config_path) as f:
         return yaml.safe_load(f)
 
 
 # ── Nested dataclasses mirror the YAML structure ────────────────────────────
+
 
 @dataclass
 class DataConfig:
@@ -38,7 +36,7 @@ class DataConfig:
 @dataclass
 class PreprocessingConfig:
     sequence_length: int
-    features: List[str]
+    features: list[str]
     target: str
     train_ratio: float
     val_ratio: float
